@@ -1,1 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7660e8">
+  <meta name="description" content="Hello One — discover events and manage your tickets.">
+  <title>Hello One — Events & Tickets</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Hello One home">
+        <span class="brand-mark">H<span>1</span></span>
+        <span class="brand-copy"><strong>Hello One</strong><small>Discover. Book. Experience.</small></span>
+      </a>
+      <button class="avatar-button" id="profileShortcut" aria-label="Open profile">H</button>
+    </header>
+
+    <main id="mainContent">
+      <section class="screen active" id="homeScreen" data-screen="home">
+        <div class="location-row">
+          <div><span class="eyebrow">YOUR LOCATION</span><strong id="locationText">Muzaffarpur, Bihar</strong></div>
+          <button class="icon-button" id="locationButton" aria-label="Change location" title="Change location">⌖</button>
+        </div>
+        <label class="searchbar"><span aria-hidden="true">⌕</span><input id="eventSearch" type="search" placeholder="Search events, festivals..." autocomplete="off"><button id="clearSearch" aria-label="Clear search" type="button">×</button></label>
+        <div class="category-row" id="categoryRow" aria-label="Filter events">
+          <button class="chip selected" data-category="All">All</button>
+          <button class="chip" data-category="Music">Music</button>
+          <button class="chip" data-category="Festival">Festival</button>
+          <button class="chip" data-category="Community">Community</button>
+        </div>
+        <div class="section-heading"><div><span class="eyebrow">FIND YOUR NEXT EXPERIENCE</span><h1>Explore Events</h1></div><button class="text-button" id="viewAllButton">View all ↗</button></div>
+        <div class="featured-wrap" id="featuredWrap"></div>
+        <div class="section-heading compact"><div><span class="eyebrow">MADE FOR YOUR PLANS</span><h2>Upcoming Events</h2></div><span class="count-pill" id="eventCount">0 events</span></div>
+        <div class="event-list" id="eventList" aria-live="polite"></div>
+        <div class="empty-state hidden" id="emptyEvents"><span>✦</span><h3>No events found</h3><p>Try another search or category.</p></div>
+      </section>
+
+      <section class="screen" id="eventScreen" data-screen="event">
+        <button class="back-button" data-go="home">← <span>Back to events</span></button>
+        <div id="eventDetail"></div>
+      </section>
+
+      <section class="screen" id="ticketsScreen" data-screen="tickets">
+        <div class="page-title"><span class="eyebrow">YOUR HELLO ONE</span><h1>My Tickets</h1><p>Manage your event tickets in one place.</p></div>
+        <div class="segmented-control" role="tablist" aria-label="Ticket status">
+          <button class="segment active" data-ticket-tab="upcoming" role="tab" aria-selected="true">Upcoming</button>
+          <button class="segment" data-ticket-tab="history" role="tab" aria-selected="false">History</button>
+        </div>
+        <div class="ticket-list" id="ticketList"></div>
+        <div class="empty-state hidden" id="emptyTickets"><span>▣</span><h3>No tickets here yet</h3><p>Your confirmed bookings will appear here after the backend is connected.</p><button class="primary-button" data-go="home">Explore events</button></div>
+      </section>
+
+      <section class="screen" id="ticketScreen" data-screen="ticket">
+        <button class="back-button" data-go="tickets">← <span>My Tickets</span></button>
+        <div id="ticketDetail"></div>
+      </section>
+
+      <section class="screen" id="profileScreen" data-screen="profile">
+        <div class="page-title"><span class="eyebrow">YOUR ACCOUNT</span><h1>Profile</h1><p>Your Hello One account and preferences.</p></div>
+        <div class="profile-card">
+          <div class="profile-avatar" id="profileAvatar">H</div><div><h2 id="profileName">Hello, Guest!</h2><p id="profileEmail">Sign in to see your booking history.</p></div>
+        </div>
+        <div class="settings-list">
+          <button class="settings-item" id="signInButton"><span class="settings-icon">↗</span><span><strong>Sign in / Connect account</strong><small>Connect to your Hello One booking account</small></span><b>›</b></button>
+          <button class="settings-item" id="helpButton"><span class="settings-icon">?</span><span><strong>Help & support</strong><small>Questions about events or tickets</small></span><b>›</b></button>
+          <div class="settings-item static"><span class="settings-icon">♡</span><span><strong>Hello One</strong><small>Discover. Book. Experience.</small></span></div>
+        </div>
+        <p class="fine-print">This frontend is a starter UI. Account, booking, payment and ticket data are not live until the backend integration is configured and tested.</p>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-item active" data-go="home"><span class="nav-icon">⌂</span><small>Home</small></button>
+      <button class="nav-item" data-go="tickets"><span class="nav-icon">▣</span><small>Tickets</small></button>
+      <button class="nav-item" data-go="saved"><span class="nav-icon">♡</span><small>Saved</small></button>
+      <button class="nav-item" data-go="profile"><span class="nav-icon nav-profile">H</span><small>Profile</small></button>
+    </nav>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+      <span class="eyebrow">HELLO ONE</span><h2 id="modalTitle">Connect your account</h2>
+      <p id="modalDescription">Sign-in and booking require a configured backend. This demo will not claim that a booking or payment succeeded.</p>
+      <label class="field-label" for="accountMobile">Mobile number</label><input class="form-input" id="accountMobile" inputmode="tel" maxlength="15" placeholder="Enter mobile number">
+      <label class="field-label" for="accountPin">MPIN / access code</label><input class="form-input" id="accountPin" type="password" inputmode="numeric" maxlength="8" placeholder="Enter your code">
+      <p class="form-error hidden" id="formError"></p>
+      <button class="primary-button full-width" id="connectButton">Check connection</button>
+      <p class="fine-print">No credentials are sent anywhere by this starter template.</p>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
 
