@@ -5,3 +5,56 @@
 @media print{
   body{background:white}.app-shell{max-width:100%;box-shadow:none;padding:0}.topbar,.bottom-nav,.back-button,.purchase-bar,.ticket-actions,.toast{display:none!important}.screen{display:none!important;padding:0}.screen.active{display:block!important}#ticketScreen{display:block!important}.ticket-detail-card{border:0;box-shadow:none}.ticket-note{color:#333;background:#f4f4f4}.ticket-detail-card .success-head{padding-top:0}@page{margin:12mm}
 }
+
+/* Fixed app chrome: header and bottom navigation stay in place while screens scroll. */
+html, body { min-height: 100%; }
+body { overflow: hidden; }
+.app-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  padding-bottom: 0;
+}
+.topbar {
+  position: absolute;
+  z-index: 30;
+  inset: 0 0 auto 0;
+  width: 100%;
+  flex-shrink: 0;
+}
+#mainContent {
+  position: absolute;
+  inset: 72px 0 75px 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #d6cffb transparent;
+}
+#mainContent::-webkit-scrollbar { width: 4px; }
+#mainContent::-webkit-scrollbar-thumb { background: #d6cffb; border-radius: 8px; }
+.bottom-nav {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  flex-shrink: 0;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+.screen { min-height: 100%; }
+.purchase-bar { position: static; }
+@media (min-width: 700px) {
+  body { padding: 28px 0; overflow: hidden; }
+  .app-shell { height: calc(100dvh - 56px); min-height: 0; border-radius: 28px; }
+  .topbar { border-radius: 28px 28px 0 0; }
+  .bottom-nav { bottom: 0; border-radius: 0 0 28px 28px; }
+  #mainContent { inset: 72px 0 75px 0; }
+}
+@media print {
+  body { overflow: visible; }
+  .app-shell { height: auto; overflow: visible; }
+  #mainContent { position: static; height: auto; overflow: visible; }
+}
