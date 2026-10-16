@@ -116,12 +116,56 @@ function openEvent(id) {
   $("#eventDetail .about-block").after(shareButton);
 }
 function beginBooking(event) {
-  if (!CONFIG.appsScriptUrl) {
-    showToast("Booking backend URL is not configured yet.");
-    return;
-  }
-  // Opens the existing portal only; this does not confirm a booking or payment.
-  window.open(CONFIG.appsScriptUrl, "_blank", "noopener,noreferrer");
+  // Booking UI stays inside this index.html app. No redirect to the Apps Script page.
+  openBookingFlow(event);
+}
+
+function openBookingFlow(event) {
+  const old = $("#bookingModal");
+  if (old) old.remove();
+  const modal = document.createElement("div");
+  modal.id = "bookingModal";
+  modal.className = "modal-backdrop";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "bookingModalTitle");
+  modal.innerHTML = `
+    <div class="modal-card booking-modal-card">
+      <button class="modal-close" id="bookingModalClose" aria-label="Close">×</button>
+      <span class="eyebrow">HELLO ONE TICKETS</span>
+      <h2 id="bookingModalTitle">Book your ticket</h2>
+      <p>Selected event: <strong>${escapeHTML(event.title)}</strong></p>
+      <div class="ticket-location"><small>EVENT DETAILS</small><strong>${escapeHTML(formatDate(event.date))} · ${escapeHTML(event.time || "Time TBA")}</strong><p>${escapeHTML(event.location || CONFIG.location)}</p></div>
+      <label class="field-label" for="bookingName">Full name</label>
+      <input class="form-input" id="bookingName" autocomplete="name" placeholder="Enter your full name">
+      <label class="field-label" for="bookingMobile">Mobile number</label>
+      <input class="form-input" id="bookingMobile" inputmode="tel" autocomplete="tel" maxlength="15" placeholder="Enter mobile number">
+      <label class="field-label" for="bookingQuantity">Number of tickets</label>
+      <select class="form-input" id="bookingQuantity"><option value="1">1 ticket</option><option value="2">2 tickets</option><option value="3">3 tickets</option><option value="4">4 tickets</option><option value="5">5 tickets</option></select>
+      <div class="booking-total"><span>Total (sample calculation)</span><strong id="bookingTotal">${escapeHTML(money(event.price))}</strong></div>
+      <p class="form-error hidden" id="bookingError"></p>
+      <button class="primary-button purple full-width" id="submitBookingButton">Continue</button>
+      <p class="fine-print">This form is currently frontend-only. It will not create a real booking or accept payment until the Apps Script API is connected and tested.</p>
+    </div>`;
+  document.body.appendChild(modal);
+  const quantity = $("#bookingQuantity", modal);
+  const total = $("#bookingTotal", modal);
+  const updateTotal = () => { total.textContent = money(Number(event.price || 0) * Number(quantity.value || 1)); };
+  quantity.addEventListener("change", updateTotal);
+  $("#bookingModalClose", modal).addEventListener("click", () => modal.remove());
+  modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+  $("#submitBookingButton", modal).addEventListener("click", () => {
+    const name = $("#bookingName", modal).value.trim();
+    const mobile = $("#bookingMobile", modal).value.trim();
+    const error = $("#bookingError", modal);
+    if (!name || !mobile) {
+      error.textContent = "Please enter your name and mobile number.";
+      error.classList.remove("hidden");
+      return;
+    }
+    error.textContent = "Booking API is not connected yet. No booking has been created and no payment has been taken.";
+    error.classList.remove("hidden");
+  });
 }
 function makePseudoQR(seed) {
   // Visual placeholder only; not a scannable ticket QR code.
@@ -172,20 +216,8 @@ function connectAccount() {
   error.textContent = "This starter does not submit your credentials. Open the official Hello One portal to sign in.";
   error.classList.remove("hidden");
   void pin;
-  const portalLink = document.createElement("a");
-  portalLink.href = CONFIG.appsScriptUrl;
-  portalLink.target = "_blank";
-  portalLink.rel = "noopener noreferrer";
-  portalLink.className = "primary-button purple full-width";
-  portalLink.style.display = "block";
-  portalLink.style.textAlign = "center";
-  portalLink.style.textDecoration = "none";
-  portalLink.style.marginTop = "10px";
-  portalLink.textContent = "Open Hello One Portal ↗";
-  const oldLink = $("#portalLink");
-  if (oldLink) oldLink.remove();
-  portalLink.id = "portalLink";
-  $("#connectButton").after(portalLink);
+  error.textContent = "Account sign-in stays on this page, but authentication must be implemented against the verified Apps Script API before it can work.";
+  error.classList.remove("hidden");
 }
 function saveEvent(id) {
   if (savedIds.has(id)) savedIds.delete(id); else savedIds.add(id);
