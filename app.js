@@ -8,7 +8,7 @@
 const CONFIG = {
   // TODO: Add your existing Apps Script /exec URL only after confirming its API actions
   // and response format. Do not assume a UI click means a booking/payment succeeded.
-  appsScriptUrl: "",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbzrEuRvewtLFt_KQPu1SSl6ZnG4LPqh9Eazdh9vTAB64vUs5rHxyMoO69ELTz3FIh8RaQ/exec",
   currency: "₹",
   location: "Muzaffarpur, Bihar",
   useSampleData: true
@@ -53,18 +53,24 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
 }
 function go(screen) {
-  if (screen === "saved") { showToast("Saved events feature will be connected next."); return; }
-  if (!["home","event","tickets","ticket","profile"].includes(screen)) screen = "home";
+  
+  if (!["home","event","tickets","ticket","saved","profile"].includes(screen)) screen = "home";
   currentScreen = screen;
   $$(".screen").forEach(el => el.classList.toggle("active", el.dataset.screen === screen));
   $$(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.go === (screen === "event" ? "home" : screen === "ticket" ? "tickets" : screen)));
   window.scrollTo({top:0,behavior:"smooth"});
   if (screen === "tickets") renderTickets();
+  if (screen === "saved") renderSaved();
 }
 function renderEventCard(event, featured=false) {
   const saved = savedIds.has(event.id);
   if (featured) return `<article class="featured-card">${safeImage(event.image)}<button class="featured-arrow" data-open-event="${escapeHTML(event.id)}" aria-label="View event">↗</button><div class="featured-info"><span class="event-date-badge">${escapeHTML(formatDate(event.date))}</span><h3>${escapeHTML(event.title)}</h3><p>⌖ ${escapeHTML(event.location || CONFIG.location)} · ${escapeHTML(money(event.price))}</p></div></article>`;
   return `<article class="event-card"><div class="event-poster">${safeImage(event.image)}<span class="poster-date">${escapeHTML(formatDate(event.date))}</span></div><div class="event-info"><span class="event-category">${escapeHTML(event.category || "Event")}</span><h3>${escapeHTML(event.title)}</h3><div class="event-meta">◷ ${escapeHTML(event.time || "Time TBA")}</div><div class="event-meta">⌖ ${escapeHTML(event.location || CONFIG.location)}</div><div class="event-price">${escapeHTML(money(event.price))}</div><div class="event-actions"><button class="small-button" data-open-event="${escapeHTML(event.id)}">View / Book</button><button class="small-button secondary" data-save-event="${escapeHTML(event.id)}" aria-label="Save event">${saved ? "♥" : "♡"}</button></div></div></article>`;
+}
+function renderSaved() {
+  const saved = events.filter(e => savedIds.has(e.id));
+  $("#savedEventList").innerHTML = saved.map(e => renderEventCard(e)).join("");
+  $("#emptySaved").classList.toggle("hidden", saved.length > 0);
 }
 function renderHome() {
   const query = ($("#eventSearch").value || "").trim().toLowerCase();
@@ -80,6 +86,7 @@ function renderHome() {
   if (filtered.length === 1 && featured) $("#eventList").innerHTML = renderEventCard(featured);
   $("#eventCount").textContent = `${filtered.length} event${filtered.length === 1 ? "" : "s"}`;
   $("#emptyEvents").classList.toggle("hidden", filtered.length > 0);
+  renderSaved();
 }
 function openEvent(id) {
   const event = eventById(id);
@@ -95,14 +102,26 @@ function openEvent(id) {
     </article>`;
   go("event");
   $("#bookEventButton").addEventListener("click", () => beginBooking(event));
+  const shareButton = document.createElement("button");
+  shareButton.className = "primary-button";
+  shareButton.style.width = "100%";
+  shareButton.style.marginTop = "10px";
+  shareButton.textContent = "Share event";
+  shareButton.addEventListener("click", () => {
+    const text = `${event.title}\n${formatDate(event.date)} · ${event.time || "Time TBA"}\n${event.location || CONFIG.location}`;
+    if (navigator.share) navigator.share({title:event.title, text, url:location.href}).catch(()=>{});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text + "\n" + location.href).then(()=>showToast("Event details copied.")).catch(()=>showToast("Unable to copy event details."));
+    else showToast("Sharing is not supported in this browser.");
+  });
+  $("#eventDetail .about-block").after(shareButton);
 }
 function beginBooking(event) {
   if (!CONFIG.appsScriptUrl) {
     showToast("Booking backend URL is not configured yet.");
     return;
   }
-  // Replace with a verified official booking URL/action after confirming the backend contract.
-  showToast("Booking link configured, but its official action still needs verification.");
+  // Opens the existing portal only; this does not confirm a booking or payment.
+  window.open(CONFIG.appsScriptUrl, "_blank", "noopener,noreferrer");
 }
 function makePseudoQR(seed) {
   // Visual placeholder only; not a scannable ticket QR code.
@@ -150,14 +169,29 @@ function connectAccount() {
   error.textContent = "";
   if (!mobile) { error.textContent = "Please enter your mobile number."; error.classList.remove("hidden"); return; }
   if (!CONFIG.appsScriptUrl) { error.textContent = "Backend is not configured. No sign-in request was sent."; error.classList.remove("hidden"); return; }
-  error.textContent = "Backend API actions and authentication response must be configured and tested before sign-in can work.";
+  error.textContent = "This starter does not submit your credentials. Open the official Hello One portal to sign in.";
   error.classList.remove("hidden");
   void pin;
+  const portalLink = document.createElement("a");
+  portalLink.href = CONFIG.appsScriptUrl;
+  portalLink.target = "_blank";
+  portalLink.rel = "noopener noreferrer";
+  portalLink.className = "primary-button purple full-width";
+  portalLink.style.display = "block";
+  portalLink.style.textAlign = "center";
+  portalLink.style.textDecoration = "none";
+  portalLink.style.marginTop = "10px";
+  portalLink.textContent = "Open Hello One Portal ↗";
+  const oldLink = $("#portalLink");
+  if (oldLink) oldLink.remove();
+  portalLink.id = "portalLink";
+  $("#connectButton").after(portalLink);
 }
 function saveEvent(id) {
   if (savedIds.has(id)) savedIds.delete(id); else savedIds.add(id);
   renderHome();
-  showToast(savedIds.has(id) ? "Event saved on this page." : "Event removed from saved list.");
+  renderSaved();
+  showToast(savedIds.has(id) ? "Event saved for this session." : "Event removed from saved list.");
 }
 function setupEvents() {
   $("#eventSearch").addEventListener("input", renderHome);
@@ -181,7 +215,15 @@ function setupEvents() {
     renderTickets();
   }));
   $("#profileShortcut").addEventListener("click",()=>go("profile"));
-  $("#locationButton").addEventListener("click",()=>showToast("Location setting is a UI placeholder in this version."));
+  $("#locationButton").addEventListener("click",()=>{
+    const value = window.prompt("Enter your event location:", CONFIG.location);
+    if (value && value.trim()) {
+      CONFIG.location = value.trim();
+      $("#locationText").textContent = CONFIG.location;
+      showToast("Location updated for this page.");
+      renderHome();
+    }
+  });
   $("#signInButton").addEventListener("click",openModal);
   $("#helpButton").addEventListener("click",()=>showToast("Add your official support contact after configuration."));
   $("#modalClose").addEventListener("click",closeModal);
@@ -193,6 +235,7 @@ function init() {
   $("#locationText").textContent=CONFIG.location;
   renderHome();
   renderTickets();
+  renderSaved();
   setupEvents();
 }
 document.addEventListener("DOMContentLoaded",init);
